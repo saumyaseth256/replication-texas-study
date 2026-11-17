@@ -1,6 +1,6 @@
-# Replication: Craig, Imberman & Perdue (2013)
+# Replication: [Craig, Imberman & Perdue (2013)](https://doi.org/10.1016/j.jue.2012.07.002)
 
-Replication of [Craig, Imberman & Perdue (2013)]([url](http://dx.doi.org/10.2139/ssrn.14832952013)), "Does it pay to get an A? School resource allocations in response to accountability ratings," *Journal of Urban Economics*, 73(1), 30-42.
+Replication of Craig, Imberman & Perdue (2013), "Does it pay to get an A? School resource allocations in response to accountability ratings," *Journal of Urban Economics*, 73(1), 30-42.
 
 Craig, Imberman and Perdue (2013) examine whether school districts reallocate resources in response to accountability ratings. Their identification comes from Texas’s 2002–03 transition to a more difficult state exam, a year in which no ratings were issued. The harder exam lowered many schools’ predicted ratings without any real change in school quality. The authors estimate each school’s gap-year rating and regress the change in resources between 2002-03 and 2003-04 on predicted rating declines, controlling for prior ratings and student demographics. Schools predicted to fall to "Acceptable" received approximately $73 more per pupil, primarily in instructional spending, and experienced a modest reduction in the student-teacher ratio, compared to schools that remained at "Acceptable". Declines to other rating categories produced no significant effects, and the additional funding had largely vanished within three years.
 
