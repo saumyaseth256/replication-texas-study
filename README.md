@@ -1,4 +1,4 @@
-# Replication: Craig, Imberman & Perdue (2013)
+# Replication: [Craig, Imberman & Perdue (2013)]([url](http://dx.doi.org/10.2139/ssrn.14832952013))
 
 Replication of Craig, S. G., Imberman, S. A., & Perdue, A. (2013), "Does it pay to get an A? School resource allocations in response to accountability ratings," *Journal of Urban Economics*, 73(1), 30-42.
 
