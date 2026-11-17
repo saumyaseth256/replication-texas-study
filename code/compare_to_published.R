@@ -1,36 +1,19 @@
-###############################################################################
-# Compare every replicated table with the published values.
-#
-# Run from the repository root after code/code.R has written tables/*.csv
-# (code.R sources this file at the end). Writes:
-#   tables/comparison/tableN_comparison.csv  cell-by-cell published vs ours
-#   tables/comparison/summary.csv            agreement statistics per table
-#   tables/formatted/tableN.csv              our estimates laid out like the paper
-###############################################################################
-
-suppressPackageStartupMessages({
-  library(dplyr)
-  library(tidyr)
-  library(stringr)
-  library(readr)
-  library(purrr)
-})
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(readr)
+library(purrr)
 
 source("code/published_values.R")
-
-dir.create("tables/comparison",
-           showWarnings = FALSE,
-           recursive = TRUE)
 dir.create("tables/formatted",
            showWarnings = FALSE,
            recursive = TRUE)
-
 read_output <- function(path) {
   read_csv(path, show_col_types = FALSE, progress = FALSE)
 }
 
 ###############################################################################
-# Replicated values in the same long format as `published_values`
+# Replications of tables compared to paper
 ###############################################################################
 
 # Table 1 --------------------------------------------------------------------
@@ -70,7 +53,6 @@ descriptive_long <- function(path, row_column, table_name) {
       se = sd
     )
 }
-
 observation_rows <- function(path, table_name) {
   read_output(path) |>
     transmute(
@@ -82,7 +64,6 @@ observation_rows <- function(path, table_name) {
       se = NA_real_
     )
 }
-
 replicated_table3 <- bind_rows(
   descriptive_long(
     "tables/table3_school_characteristics.csv",
@@ -91,7 +72,6 @@ replicated_table3 <- bind_rows(
   ),
   observation_rows("tables/table3_observations.csv", "Table 3")
 )
-
 replicated_table4 <- descriptive_long("tables/table4_mean_resources.csv", "resource", "Table 4")
 
 # Regression tables ----------------------------------------------------------
@@ -99,11 +79,9 @@ clean_term <- function(term) {
   term |>
     str_replace("^factor\\(rating_(\\d{4})\\)([LAR])$", "\\2_\\1")
 }
-
 clean_outcome <- function(outcome) {
   str_remove(outcome, "^change_\\d{4}_")
 }
-
 regression_long <- function(models) {
   coefficients <- models |>
     transmute(
@@ -128,7 +106,6 @@ regression_long <- function(models) {
     )
   bind_rows(coefficients, observations)
 }
-
 regression_files <- c(
   "Table 5" = "tables/table5_models.csv",
   "Table 6" = "tables/table6_models.csv",
@@ -137,14 +114,12 @@ regression_files <- c(
   "Table 9" = "tables/table9_models.csv",
   "Table 10" = "tables/table10_models.csv"
 )
-
 replicated_regressions <- map_dfr(regression_files, function(path) {
   models <- read_output(path)
   if (!"panel" %in% names(models))
     models$panel <- ""
   regression_long(models)
 })
-
 joint_f <- read_output("tables/table5_joint_f.csv") |>
   transmute(
     table,
@@ -155,7 +130,6 @@ joint_f <- read_output("tables/table5_joint_f.csv") |>
     se = NA_real_,
     p_value
   )
-
 replicated_values <- bind_rows(
   replicated_table1,
   replicated_table2,
@@ -165,136 +139,22 @@ replicated_values <- bind_rows(
   joint_f
 )
 
-###############################################################################
-# Cell-by-cell comparison
-###############################################################################
-
+# Keep the cells reported in the paper, in the paper's row and column order.
 stars <- function(p) {
   case_when(is.na(p) ~ "", p < 0.01 ~ "***", p < 0.05 ~ "**", p < 0.10 ~ "*", TRUE ~ "")
 }
-
-published_p <- function(estimate, se) {
-  # Published tables report estimates and SEs; recover a normal-approximation
-  # p-value so significance can be compared with ours.
-  if_else(is.na(se) |
-            se == 0, NA_real_, 2 * pnorm(-abs(estimate / se)))
-}
-
-comparison <- published_values |>
-  rename(published = estimate, published_se = se) |>
+table_order <- paste("Table", 1:10)
+replicated_cells <- published_values |>
+  select(table, panel, term, column) |>
   left_join(
     replicated_values |>
-      rename(
-        replicated = estimate,
-        replicated_se = se,
-        replicated_p = p_value
-      ),
+      rename(replicated = estimate, replicated_se = se),
     by = c("table", "panel", "term", "column")
   ) |>
-  mutate(
-    difference = replicated - published,
-    same_sign = if_else(
-      published == 0 | replicated == 0,
-      NA,
-      sign(replicated) == sign(published)
-    ),
-    published_stars = stars(published_p(published, published_se)),
-    replicated_stars = stars(replicated_p),
-    is_coefficient = table %in% names(regression_files) &
-      !term %in% c("observations", "F_any_drop"),
-    is_shock_term = term %in% c(
-      "rating_dropped_to_L",
-      "rating_dropped_to_A",
-      "rating_dropped_to_R",
-      "rating_increased",
-      "interaction"
-    ),
-    # Within the published 95% confidence interval?
-    within_published_ci = if_else(
-      is_coefficient & !is.na(published_se),
-      abs(difference) <= 1.96 * published_se,
-      NA
-    )
-  )
-
-table_order <- paste("Table", 1:10)
-
-walk(table_order, function(table_name) {
-  file_name <- paste0("tables/comparison/",
-                      str_replace(tolower(table_name), " ", ""),
-                      "_comparison.csv")
-  comparison |>
-    filter(table == table_name) |>
-    select(
-      table,
-      panel,
-      term,
-      column,
-      published,
-      published_se,
-      published_stars,
-      replicated,
-      replicated_se,
-      replicated_stars,
-      difference,
-      same_sign,
-      within_published_ci
-    ) |>
-    mutate(across(where(is.numeric), ~ round(.x, 3))) |>
-    write_csv(file_name, na = "")
-})
-
-summary_table <- comparison |>
-  group_by(table) |>
-  summarise(
-    published_cells = n(),
-    replicated_cells = sum(!is.na(replicated)),
-    median_abs_difference = median(abs(difference), na.rm = TRUE),
-    # For regression tables use coefficients only, so sample sizes and F
-    # statistics do not dominate the correlation.
-    correlation = {
-      keep <- if (any(is_coefficient))
-        is_coefficient
-      else
-        rep(TRUE, n())
-      if (sum(!is.na(replicated[keep])) > 2)
-        cor(published[keep], replicated[keep], use = "complete.obs")
-      else
-        NA_real_
-    },
-    coefficients_same_sign = if (any(is_coefficient))
-      mean(same_sign[is_coefficient], na.rm = TRUE)
-    else
-      NA_real_,
-    coefficients_within_published_95ci = if (any(is_coefficient))
-      mean(within_published_ci[is_coefficient], na.rm = TRUE)
-    else
-      NA_real_,
-    shock_terms_same_sign = if (any(is_shock_term))
-      mean(same_sign[is_shock_term], na.rm = TRUE)
-    else
-      NA_real_,
-    shock_terms_within_published_95ci = if (any(is_shock_term))
-      mean(within_published_ci[is_shock_term], na.rm = TRUE)
-    else
-      NA_real_,
-    .groups = "drop"
-  ) |>
-  arrange(match(table, table_order)) |>
-  mutate(across(where(is.numeric), ~ round(.x, 3)))
-
-write_csv(summary_table, "tables/comparison/summary.csv", na = "")
-
-missing_cells <- comparison |>
-  filter(is.na(replicated)) |>
-  select(table, panel, term, column, published)
-write_csv(missing_cells,
-          "tables/comparison/cells_not_replicated.csv",
-          na = "")
+  mutate(replicated_stars = stars(p_value))
 
 ###############################################################################
-# Our estimates in the paper's layout: one row per term, estimate (with stars)
-# on the first line and (SE) on the second, columns as in the paper.
+# Formatted replication
 ###############################################################################
 
 format_number <- function(x, digits) {
@@ -305,10 +165,8 @@ format_number <- function(x, digits) {
             digits = digits[i],
             big.mark = "")
   }, character(1))
-  # Avoid printing "-0.0" for values that round to zero.
   str_replace(out, "^-(0\\.?0*)$", "\\1")
 }
-
 digits_for <- function(table_name, column) {
   case_when(
     table_name == "Table 7" ~ 3L,
@@ -319,9 +177,8 @@ digits_for <- function(table_name, column) {
     TRUE ~ 1L
   )
 }
-
 walk(table_order, function(table_name) {
-  cells <- comparison |>
+  cells <- replicated_cells |>
     filter(table == table_name, !is.na(replicated)) |>
     mutate(
       digits = if_else(
@@ -361,6 +218,3 @@ walk(table_order, function(table_name) {
             paste0("tables/formatted/", str_replace(tolower(table_name), " ", ""), ".csv"),
             na = "")
 })
-
-message("Published-vs-replicated comparison written to tables/comparison/")
-print(as.data.frame(summary_table))

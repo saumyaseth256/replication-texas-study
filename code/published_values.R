@@ -1,12 +1,3 @@
-###############################################################################
-# Published values from Craig, Imberman, and Perdue (2013), JUE 73: 30-42.
-#
-# Transcribed from the page images of the published PDF (text extraction drops
-# minus signs, so every sign here was checked against the typeset tables).
-# Each regression cell is written as "estimate(se)". Builds `published_values`,
-# a long tibble with one row per table cell.
-###############################################################################
-
 library(dplyr)
 library(tibble)
 library(stringr)
@@ -19,7 +10,6 @@ parse_cells <- function(row_string) {
            cells, "\\(([^)]*)\\)"
          )[, 2])))
 }
-
 build_regression_table <- function(table_name, panel, outcomes, rows) {
   imap_dfr(rows, function(row_string, term) {
     parse_cells(row_string) |>
@@ -32,7 +22,6 @@ build_regression_table <- function(table_name, panel, outcomes, rows) {
       )
   })
 }
-
 resource_outcomes <- c(
   "total",
   "instruction",
@@ -41,7 +30,6 @@ resource_outcomes <- c(
   "extracurricular",
   "student_teacher"
 )
-
 prior_rating_terms <- c(
   "L_2002",
   "A_2002",
@@ -55,7 +43,7 @@ prior_rating_terms <- c(
 )
 
 ###############################################################################
-# Table 1: rating distributions (percent)
+# Table 1
 ###############################################################################
 
 published_table1 <- tribble(
@@ -167,7 +155,7 @@ published_table1 <- tribble(
   )
 
 ###############################################################################
-# Table 2: transition matrices (row = rating in t-1, column = rating in t)
+# Table 2
 ###############################################################################
 
 transition_panel <- function(panel, rows) {
@@ -182,7 +170,6 @@ transition_panel <- function(panel, rows) {
     )
   })
 }
-
 published_table2 <- bind_rows(
   transition_panel("A_TAAS", list(
     L = c(11.3, 82.3, 6.4, 0.0),
@@ -205,8 +192,7 @@ published_table2 <- bind_rows(
 )
 
 ###############################################################################
-# Table 3: school characteristics by rating, mean (sd)
-# Columns: TAAS L, A, R, E, then TAKS L, A, R, E.
+# Table 3
 ###############################################################################
 
 table3_4_columns <- c("TAAS_L",
@@ -217,7 +203,6 @@ table3_4_columns <- c("TAAS_L",
                       "TAKS_A",
                       "TAKS_R",
                       "TAKS_E")
-
 published_table3 <- build_regression_table(
   "Table 3",
   "",
@@ -238,7 +223,7 @@ published_table3 <- build_regression_table(
 )
 
 ###############################################################################
-# Table 4: mean resources in year t+1 by rating in year t, mean (sd)
+# Table 4
 ###############################################################################
 
 published_table4 <- build_regression_table(
@@ -256,7 +241,7 @@ published_table4 <- build_regression_table(
 )
 
 ###############################################################################
-# Table 5: change from 2002-03 to 2003-04
+# Table 5
 ###############################################################################
 
 published_table5 <- build_regression_table(
@@ -283,7 +268,7 @@ published_table5 <- build_regression_table(
 )
 
 ###############################################################################
-# Table 6: placebo, change from 2001-02 to 2002-03
+# Table 6
 ###############################################################################
 
 published_table6 <- build_regression_table(
@@ -309,7 +294,7 @@ published_table6 <- build_regression_table(
 )
 
 ###############################################################################
-# Table 7: prior (2001-02 to 2002-03) changes in student characteristics
+# Table 7
 ###############################################################################
 
 published_table7 <- build_regression_table(
@@ -342,7 +327,7 @@ published_table7 <- build_regression_table(
 )
 
 ###############################################################################
-# Table 8: teacher/staff characteristics, change from 2002-03 to 2003-04
+# Table 8
 ###############################################################################
 
 published_table8 <- build_regression_table(
@@ -376,7 +361,7 @@ published_table8 <- build_regression_table(
 )
 
 ###############################################################################
-# Table 9: interaction models (only "falls to A" and interaction reported)
+# Table 9
 ###############################################################################
 
 published_table9 <- bind_rows(
@@ -419,7 +404,7 @@ published_table9 <- bind_rows(
 )
 
 ###############################################################################
-# Table 10: change from 2002-03 to 2005-06
+# Table 10
 ###############################################################################
 
 published_table10 <- build_regression_table(
@@ -443,7 +428,6 @@ published_table10 <- build_regression_table(
     observations = "4882 4882 4882 4882 4882 4881"
   )
 )
-
 published_values <- bind_rows(
   published_table1,
   published_table2,

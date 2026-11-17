@@ -2,3 +2,8 @@
 .Rhistory
 .RData
 .Ruserdata
+.DS_Store
+data/
+data_download.zip
+data_download_temp/
+*.pdf
